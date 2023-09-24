@@ -8,6 +8,8 @@ const Home = () => {
     const [shouldDraw, setShouldDraw] = useState(false);
     const [size, setSize] = useState(500);
     const [coord, setCoord] = useState([0, 0]);
+    const [matrix, setMatrix] = useState<number[][]>([[]]);
+    const [isDrawByMouse, setIsDrawByMouse] = useState(true);
 
     const initStartMatrix = () => {
         let m: Array<Array<number>> = new Array<Array<number>>();
@@ -21,22 +23,25 @@ const Home = () => {
         return m;
     };
 
-    const [matrix, setMatrix] = useState<number[][]>(initStartMatrix());
 
     useEffect(() => {
         if (shouldDraw) {
             let interval = setInterval(() => {
-                let canvasContext = drawCanvasRef.current?.getContext('2d');
-                if (canvasContext)
-                    drawLife(canvasContext, matrix);
+                drawGeneration(matrix);
                 let next = nextGen();
                 setMatrix(next);
             }, 300);
+
             return () => clearInterval(interval);
         }
     }, [shouldDraw, matrix]);
 
-    const drawLife = (ctx: CanvasRenderingContext2D, matr: number[][]) => {
+    const drawGeneration = (matr: number[][]) => {
+
+        let ctx = drawCanvasRef.current?.getContext('2d');
+        if (!ctx)
+            return;
+
         for (let row = 0; row < size; row++) {
             for (let column = 0; column < size; column++) {
                 if (matr !== null && matr[row][column] === 1) {
@@ -63,17 +68,16 @@ const Home = () => {
         return sum;
     };
 
-    const generate = () => {
+    const generatePoints = () => {
         let m = initStartMatrix();
         for (let i = 0; i < size; i++) {
             for (let j = 0; j < size; j++) {
                 m[i][j] = Math.random() < 0.99 ? 0 : 1;
             }
         }
+
         setMatrix(m);
-        let canvasContext = drawCanvasRef.current?.getContext('2d');
-        if (canvasContext)
-            drawLife(canvasContext, m);
+        drawGeneration(m);
     };
 
     const nextGen = () => {
@@ -125,7 +129,7 @@ const Home = () => {
         setCoord([0, 0]);
     };
 
-    const letUsePainting = () => {
+    const MakeMatrixFromDraw = () => {
         let m = initStartMatrix();
         let canvasContext = drawCanvasRef.current?.getContext('2d');
         const imageData = canvasContext?.getImageData(0, 0, size, size).data;
@@ -134,7 +138,8 @@ const Home = () => {
             for (let i = 1; i <= size; i++) {
                 for (let j = 1; j <= size; j++) {
                     let index = j * size + i;
-                    m[j - 1][i - 1] = (imageData[index * 4] + imageData[index * 4 + 1] + imageData[index * 4 + 2] + imageData[index * 4 + 3]) > 0 ? 1 : 0;
+                    let pixelValue = (imageData[index * 4] + imageData[index * 4 + 1] + imageData[index * 4 + 2] + imageData[index * 4 + 3]);
+                    m[j - 1][i - 1] = pixelValue !== 0 ? 1 : 0;
                 }
             }
 
@@ -148,6 +153,7 @@ const Home = () => {
     return (
         <>
             <div className={cl.container}>
+
                 <div className={cl.slidecontainer}>
                     <input
                         type="range"
@@ -158,6 +164,7 @@ const Home = () => {
                         id="myRange"
                         onChange={(event) => sizeChange(event)} />
                 </div>
+
                 <canvas className={cl.poligon}
                     ref={drawCanvasRef}
                     onMouseMove={(event) => drawByMouse(event)}
@@ -176,19 +183,11 @@ const Home = () => {
                         <button
                             className={cl.launchButton}
                             onClick={() => {
-                                setShouldDraw(prev => !prev);
-                                generate();
-                                setShouldDraw(prev => !prev);
+                                setShouldDraw(_ => false);
+                                generatePoints();
                             }}
                         >
                             Сгенерировать точки
-                        </button>
-
-                        <button
-                            className={cl.launchButton}
-                            onClick={letUsePainting}
-                        >
-                            Использовать рисунок
                         </button>
 
                     </div>
@@ -197,10 +196,31 @@ const Home = () => {
                         ref={addButtonRef}
                         className={cl.launchButton}
                         onClick={() => {
-                            setShouldDraw(prev => !prev);
+                            //MakeMatrixFromDraw();
+                            setShouldDraw(_ => true);
                         }}
                     >
                         Оживить
+                    </button>
+
+                    <button
+                        ref={addButtonRef}
+                        className={cl.launchButton}
+                        onClick={() => {
+                            setShouldDraw(_ => false);
+                        }}
+                    >
+                        Пауза
+                    </button>
+
+                    <button
+                        ref={addButtonRef}
+                        className={cl.launchButton}
+                        onClick={() => {
+                            setShouldDraw(prev => !prev);
+                        }}
+                    >
+                        Сбросить
                     </button>
 
                 </div>
