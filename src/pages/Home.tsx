@@ -10,6 +10,10 @@ const Home = () => {
     const [coord, setCoord] = useState([0, 0]);
     const [matrix, setMatrix] = useState<number[][]>([[]]);
     const [isDrawByMouse, setIsDrawByMouse] = useState(true);
+    const [genBtnDisabled, setGenBtnDisabled] = useState(false);
+    const [liveBtnDisabled, setLiveBtnDisabled] = useState(true);
+    const [pauseBtnDisabled, setPauseBtnDisabled] = useState(true);
+
 
     const initStartMatrix = () => {
 
@@ -136,6 +140,7 @@ const Home = () => {
         }
 
         setIsDrawByMouse(_ => true);
+        setLiveBtnDisabled(false);
     };
 
 
@@ -173,7 +178,36 @@ const Home = () => {
     };
 
 
-    const reset = () => {
+    const onGenBtnClick = () => {
+        setLiveBtnDisabled(false);
+        setShouldDraw(_ => false);
+        generatePoints();
+    };
+
+    const onLiveBtnClick = () => {
+        if (isDrawByMouse) {
+            MakeMatrixFromDraw();
+        }
+        setLiveBtnDisabled(true);
+        setGenBtnDisabled(true);
+        setPauseBtnDisabled(false);
+        setShouldDraw(_ => true);
+    };
+
+    const onPauseBtnClick = () => {
+        setIsDrawByMouse(_ => false);
+        setGenBtnDisabled(false);
+        setLiveBtnDisabled(false);
+        setPauseBtnDisabled(true);
+        setShouldDraw(_ => false);
+    };
+
+    const onResetBtnClick = () => {
+        setShouldDraw(_ => false);
+        setGenBtnDisabled(false);
+        setLiveBtnDisabled(true);
+        setPauseBtnDisabled(true);
+
         let context = drawCanvasRef.current?.getContext('2d');
         if (drawCanvasRef.current?.width) {
             context?.clearRect(0, 0, drawCanvasRef.current?.width, drawCanvasRef.current?.height);
@@ -213,10 +247,8 @@ const Home = () => {
 
                         <button
                             className={cl.launchButton}
-                            onClick={() => {
-                                setShouldDraw(_ => false);
-                                generatePoints();
-                            }}
+                            disabled={genBtnDisabled}
+                            onClick={onGenBtnClick}
                         >
                             Сгенерировать точки
                         </button>
@@ -228,12 +260,8 @@ const Home = () => {
                 <button
                     ref={addButtonRef}
                     className={cl.launchButton}
-                    onClick={() => {
-                        if (isDrawByMouse) {
-                            MakeMatrixFromDraw();
-                        }
-                        setShouldDraw(_ => true);
-                    }}
+                    disabled={liveBtnDisabled}
+                    onClick={onLiveBtnClick}
                 >
                     Оживить
                 </button>
@@ -241,10 +269,8 @@ const Home = () => {
                 <button
                     ref={addButtonRef}
                     className={cl.launchButton}
-                    onClick={() => {
-                        setIsDrawByMouse(_ => false);
-                        setShouldDraw(_ => false);
-                    }}
+                    disabled={pauseBtnDisabled}
+                    onClick={onPauseBtnClick}
                 >
                     Пауза
                 </button>
@@ -252,10 +278,7 @@ const Home = () => {
                 <button
                     ref={addButtonRef}
                     className={cl.launchButton}
-                    onClick={() => {
-                        setShouldDraw(_ => false);
-                        reset();
-                    }}
+                    onClick={onResetBtnClick}
                 >
                     Сбросить
                 </button>
