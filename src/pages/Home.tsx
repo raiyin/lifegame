@@ -12,14 +12,12 @@ const Home = () => {
     const [isDrawByMouse, setIsDrawByMouse] = useState(true);
 
     const initStartMatrix = () => {
-        let m: Array<Array<number>> = new Array<Array<number>>();
-        for (let i = 0; i < size; i++) {
-            let row = new Array<number>();
-            for (let j = 0; j < size; j++) {
-                row.push(0);
-            }
-            m.push(row);
+
+        let m = new Array(size);
+        for (var i = 0; i < size; i++) {
+            m[i] = new Array(size);
         }
+
         return m;
     };
 
@@ -30,10 +28,11 @@ const Home = () => {
                 drawGeneration(matrix);
                 let next = nextGen(matrix);
                 setMatrix(next);
-            }, 300);
 
+            }, 300);
             return () => clearInterval(interval);
         }
+
     }, [shouldDraw, matrix]);
 
 
@@ -65,7 +64,7 @@ const Home = () => {
             }
         }
 
-        setMatrix(m);
+        setMatrix(_ => m);
         drawGeneration(m);
         setIsDrawByMouse(_ => false);
     };
@@ -105,34 +104,38 @@ const Home = () => {
 
 
     const drawByMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-        if (drawCanvasRef !== null && drawCanvasRef.current !== null && event.buttons) {
-            if (coord[0] === 0 && coord[1] === 0) {
-                let newCoord = [
-                    event.clientX - drawCanvasRef.current.offsetLeft,
-                    event.clientY - drawCanvasRef.current.offsetTop];
-                setCoord(newCoord);
-            }
-            else {
-                let canvasContext = drawCanvasRef.current?.getContext('2d');
-                if (canvasContext !== null) {
-                    canvasContext.fillStyle = '#000000';
-                }
 
-                canvasContext?.beginPath();
-                canvasContext?.moveTo(coord[0], coord[1]);
-                canvasContext?.lineTo(
-                    event.clientX - drawCanvasRef.current.offsetLeft,
-                    event.clientY - drawCanvasRef.current.offsetTop);
-                canvasContext?.closePath();
-                canvasContext?.stroke();
-                let newCoord = [
-                    event.clientX - drawCanvasRef.current.offsetLeft,
-                    event.clientY - drawCanvasRef.current.offsetTop];
-                setCoord(newCoord);
-            }
-
-            setIsDrawByMouse(_ => true);
+        if (drawCanvasRef === null || drawCanvasRef.current === null || !event.buttons) {
+            return;
         }
+
+        if (coord[0] === 0 && coord[1] === 0) {
+            let newCoord = [
+                event.clientX - drawCanvasRef.current.offsetLeft,
+                event.clientY - drawCanvasRef.current.offsetTop];
+            setCoord(newCoord);
+        }
+        else {
+            let canvasContext = drawCanvasRef.current?.getContext('2d');
+            if (canvasContext === null) {
+                return;
+            }
+
+            canvasContext.fillStyle = '#000000';
+            let newCoord = [
+                event.clientX - drawCanvasRef.current.offsetLeft,
+                event.clientY - drawCanvasRef.current.offsetTop
+            ];
+
+            canvasContext.beginPath();
+            canvasContext.moveTo(coord[0], coord[1]);
+            canvasContext.lineTo(newCoord[0], newCoord[1]);
+            canvasContext.closePath();
+            canvasContext.stroke();
+            setCoord(newCoord);
+        }
+
+        setIsDrawByMouse(_ => true);
     };
 
 
@@ -143,17 +146,23 @@ const Home = () => {
 
     const MakeMatrixFromDraw = () => {
         let m = initStartMatrix();
+
         let canvasContext = drawCanvasRef.current?.getContext('2d');
         const imageData = canvasContext?.getImageData(0, 0, size, size).data;
 
-        if (imageData)
-            for (let i = 1; i <= size; i++) {
-                for (let j = 1; j <= size; j++) {
-                    let index = j * size + i;
-                    let pixelValue = (imageData[index * 4] + imageData[index * 4 + 1] + imageData[index * 4 + 2] + imageData[index * 4 + 3]);
-                    m[j - 1][i - 1] = pixelValue !== 0 ? 1 : 0;
+        if (imageData) {
+            for (let i = 0; i < size; i++) {
+                for (let j = 0; j < size; j++) {
+                    let index = i * size + j;
+                    let pixelValue =
+                        imageData[index * 4] +
+                        imageData[index * 4 + 1] +
+                        imageData[index * 4 + 2] +
+                        imageData[index * 4 + 3];
+                    m[i][j] = pixelValue !== 0 ? 1 : 0;
                 }
             }
+        }
 
         setMatrix(m);
     };
@@ -165,9 +174,10 @@ const Home = () => {
 
 
     const reset = () => {
-        let m = initStartMatrix();
-        setMatrix(m);
-        drawGeneration(m);
+        let context = drawCanvasRef.current?.getContext('2d');
+        if (drawCanvasRef.current?.width) {
+            context?.clearRect(0, 0, drawCanvasRef.current?.width, drawCanvasRef.current?.height);
+        }
     };
 
 
@@ -213,40 +223,42 @@ const Home = () => {
 
                     </div>
 
-                    <button
-                        ref={addButtonRef}
-                        className={cl.launchButton}
-                        onClick={() => {
-                            if (isDrawByMouse)
-                                MakeMatrixFromDraw();
-                            setShouldDraw(_ => true);
-                        }}
-                    >
-                        Оживить
-                    </button>
-
-                    <button
-                        ref={addButtonRef}
-                        className={cl.launchButton}
-                        onClick={() => {
-                            setShouldDraw(_ => false);
-                        }}
-                    >
-                        Пауза
-                    </button>
-
-                    <button
-                        ref={addButtonRef}
-                        className={cl.launchButton}
-                        onClick={() => {
-                            setShouldDraw(_ => false);
-                            reset();
-                        }}
-                    >
-                        Сбросить
-                    </button>
-
                 </div>
+
+                <button
+                    ref={addButtonRef}
+                    className={cl.launchButton}
+                    onClick={() => {
+                        if (isDrawByMouse) {
+                            MakeMatrixFromDraw();
+                        }
+                        setShouldDraw(_ => true);
+                    }}
+                >
+                    Оживить
+                </button>
+
+                <button
+                    ref={addButtonRef}
+                    className={cl.launchButton}
+                    onClick={() => {
+                        setIsDrawByMouse(_ => false);
+                        setShouldDraw(_ => false);
+                    }}
+                >
+                    Пауза
+                </button>
+
+                <button
+                    ref={addButtonRef}
+                    className={cl.launchButton}
+                    onClick={() => {
+                        setShouldDraw(_ => false);
+                        reset();
+                    }}
+                >
+                    Сбросить
+                </button>
 
             </div>
         </>
