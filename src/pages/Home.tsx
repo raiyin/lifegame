@@ -28,13 +28,14 @@ const Home = () => {
         if (shouldDraw) {
             let interval = setInterval(() => {
                 drawGeneration(matrix);
-                let next = nextGen();
+                let next = nextGen(matrix);
                 setMatrix(next);
             }, 300);
 
             return () => clearInterval(interval);
         }
     }, [shouldDraw, matrix]);
+
 
     const drawGeneration = (matr: number[][]) => {
 
@@ -55,18 +56,6 @@ const Home = () => {
         }
     };
 
-    const getNeighbourhoods = (i: number, j: number) => {
-        let sum = 0;
-        for (let row = i - 1; row <= i + 1; row++) {
-            for (let column = j - 1; column <= j + 1; column++) {
-                if (row < 0 || row >= size || column < 0 || column >= size || (row === i && column === j))
-                    continue;
-                if (matrix !== null && matrix[row][column] === 1)
-                    sum++;
-            }
-        }
-        return sum;
-    };
 
     const generatePoints = () => {
         let m = initStartMatrix();
@@ -78,13 +67,31 @@ const Home = () => {
 
         setMatrix(m);
         drawGeneration(m);
+        setIsDrawByMouse(_ => false);
     };
 
-    const nextGen = () => {
+
+    const getNeighbourhoods = (matr: number[][], i: number, j: number) => {
+        let sum = 0;
+        for (let row = i - 1; row <= i + 1; row++) {
+            for (let column = j - 1; column <= j + 1; column++) {
+                if (row < 0 || row >= size ||
+                    column < 0 || column >= size ||
+                    (row === i && column === j))
+                    continue;
+                if (matr !== null && matr[row][column] === 1)
+                    sum++;
+            }
+        }
+        return sum;
+    };
+
+
+    const nextGen = (m: number[][]) => {
         let nextMatrix: Array<Array<number>> = initStartMatrix();
         for (let row = 0; row < size; row++) {
             for (let column = 0; column < size; column++) {
-                let neights = getNeighbourhoods(row, column);
+                let neights = getNeighbourhoods(m, row, column);
                 if (neights === 2 || neights === 3) {
                     nextMatrix[row][column] = 1;
                 }
@@ -95,6 +102,7 @@ const Home = () => {
         }
         return nextMatrix;
     };
+
 
     const drawByMouse = (event: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
         if (drawCanvasRef !== null && drawCanvasRef.current !== null && event.buttons) {
@@ -122,12 +130,16 @@ const Home = () => {
                     event.clientY - drawCanvasRef.current.offsetTop];
                 setCoord(newCoord);
             }
+
+            setIsDrawByMouse(_ => true);
         }
     };
+
 
     const resetCoord = () => {
         setCoord([0, 0]);
     };
+
 
     const MakeMatrixFromDraw = () => {
         let m = initStartMatrix();
@@ -146,9 +158,18 @@ const Home = () => {
         setMatrix(m);
     };
 
+
     let sizeChange = (event: ChangeEvent<HTMLInputElement>) => {
         setSize(+event.currentTarget.value);
     };
+
+
+    const reset = () => {
+        let m = initStartMatrix();
+        setMatrix(m);
+        drawGeneration(m);
+    };
+
 
     return (
         <>
@@ -196,7 +217,8 @@ const Home = () => {
                         ref={addButtonRef}
                         className={cl.launchButton}
                         onClick={() => {
-                            //MakeMatrixFromDraw();
+                            if (isDrawByMouse)
+                                MakeMatrixFromDraw();
                             setShouldDraw(_ => true);
                         }}
                     >
@@ -217,7 +239,8 @@ const Home = () => {
                         ref={addButtonRef}
                         className={cl.launchButton}
                         onClick={() => {
-                            setShouldDraw(prev => !prev);
+                            setShouldDraw(_ => false);
+                            reset();
                         }}
                     >
                         Сбросить
